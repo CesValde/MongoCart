@@ -2,11 +2,11 @@
    Entrega Final
    1. Objetivos generales
    - Contarás con Mongo como sistema de persistencia principal ✅
-   - Tendrás definidos todos los endpoints para poder trabajar con productos y carritos. 
+   - Tendrás definidos todos los endpoints para poder trabajar con productos y carritos. ✅
 
    2. Objetivos específicos
-   - Profesionalizar las consultas de productos con filtros, paginación y ordenamientos
-   - Profesionalizar la gestión de carrito para implementar los últimos conceptos vistos.
+   - Profesionalizar las consultas de productos con filtros, paginación y ordenamientos ✅
+   - Profesionalizar la gestión de carrito para implementar los últimos conceptos vistos. ✅
 
    3. Formato
    Link al repositorio de Github, sin la carpeta de node_modules ✅
@@ -50,12 +50,12 @@
    - DELETE api/carts/:cid/products/:pid deberá eliminar del carrito el producto seleccionado.
    - PUT api/carts/:cid deberá actualizar todos los productos del carrito con un arreglo de productos.
    - PUT api/carts/:cid/products/:pid deberá poder actualizar SÓLO la cantidad de ejemplares del producto por cualquier cantidad pasada desde req.body
-   - DELETE api/carts/:cid deberá eliminar todos los productos del carrito
+   - DELETE api/carts/:cid deberá eliminar todos los productos del carrito ✅
 
    -+ Esta vez, para el modelo de Carts, en su propiedad products, el id de cada producto generado dentro del 
       array tiene que hacer referencia al modelo de Products. Modificar la ruta /:cid para que al traer todos los productos, 
       los traiga completos mediante un “populate”. De esta manera almacenamos sólo el Id, pero al solicitarlo podemos desglosar 
-      los productos asociados.
+      los productos asociados. ✅
 
    9. Se debe entregar
    - Modificar la vista index.handlebars en el router de views ‘/products’, creada en la pre-entrega anterior, para visualizar 
@@ -74,13 +74,13 @@
 // express
 import express from "express"
 
-// mongoose 7
+// mongoose
 import mongoose from 'mongoose'
 
 // routes
-import realTimeProducts from "./routes/views.route.js"
 import productsRoute from "./routes/products.route.js"
-/* import cartsRoute from "./routes/carts.route.js" */
+import cartsRoute from "./routes/carts.route.js"
+import realTimeProducts from "./routes/views.route.js"
 
 // express-handlebars
 import handlebars from "express-handlebars"
@@ -129,7 +129,6 @@ async function connectMongoose() {
 }
 connectMongoose()
 
-
 // iniciar el servidor
 server.listen(PORT, () => {
    console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`)
@@ -137,19 +136,17 @@ server.listen(PORT, () => {
 
 // ruta principal
 app.get("/", (req, res) => {
-   res.send("Bienvenido a MongoCart !")
+   res.send("Bienvenido a MongoCart!")
 })
 
 // rutas /api/products
 app.use("/api/products", productsRoute)
 
-
 // rutas /api/carts
-/* app.use("/api/carts", cartsRoute) */
-
+app.use("/api/carts", cartsRoute)
 
 // renderiza los productos en tiempo real
-app.use("/realtimeproducts", realTimeProducts)
+app.use("/products", realTimeProducts)
 
 io.on("connection", (socket) => {
    // emitir la coleccion de productos a todos los sockets

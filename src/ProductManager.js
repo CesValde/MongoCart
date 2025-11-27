@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 import { productsModel } from './models/products.model.js'
 
 export class ProductManager {
@@ -17,7 +17,7 @@ export class ProductManager {
 
          // usamos {}, porque Mongo espera un objeto
          const filter = {}
-         if (category) filter.category  = { $regex: `^${category}$`, $options: "i" };
+         if (category) filter.category = { $regex: `^${category}$`, $options: "i" };
          if (status !== undefined) filter.status = status === 'true'
 
          // $or: cualquiera de los campos puede coincidir
@@ -40,7 +40,7 @@ export class ProductManager {
 
          const result = await productsModel.paginate(filter, options)
 
-         res.status(200).send({
+         res.status(200).json({
             status: "Success",
             payload: result.docs,
             totalPages: result.totalPages,
@@ -54,27 +54,26 @@ export class ProductManager {
          })
       } catch (error) {
          console.log(`Cannot get the products ${error}`)
-         res.status(500).send({ error: "Internal server error" })
+         res.status(500).json({ error: "Internal server error" })
       }
    }
 
    // retorna un producto en base a su id
    async getProductById(req, res) {
       try {
-         const { pid } = req.params;
+         const { pid } = req.params
 
          // Validamos ID de Mongo
          if (!mongoose.Types.ObjectId.isValid(pid)) {
-            return res.status(400).json({ error: "Invalid product ID format" });
+            return res.status(400).json({ error: "Invalid product ID format" })
          }
 
          const product = await productsModel.findById(pid)
          if (!product) return res.status(404).json({ error: `Product with id: ${pid} Not Found` })
-         res.status(200).send({ result: "Success", payload: product })
-
+         res.status(200).json({ result: "Success", payload: product })
       } catch (error) {
          console.log(`Cannot get the product ${error}`)
-         res.status(500).send({ error: "Internal server error" })
+         res.status(500).json({ error: "Internal server error" })
       }
    }
 
@@ -92,13 +91,13 @@ export class ProductManager {
          for (const product of data) {
             const { title, description, code, price, status, stock, category, thumbnails } = product
             if (!title || !description || !code || !price || !status || !stock || !category || !thumbnails) {
-               return res.status(400).send({ error: "Missing values" })
+               return res.status(400).json({ error: "Missing values" })
             }
          }
 
          const result = await productsModel.insertMany(data)
          res.status(201).json({
-            result: "Success",
+            result: "Product add",
             inserted: result.length,
             payload: result
          })
@@ -107,7 +106,7 @@ export class ProductManager {
 
       } catch (error) {
          console.log(`Cannot add the product ${error}`)
-         res.status(500).send({ error: "Internal server error" })
+         res.status(500).json({ error: "Internal server error" })
       }
    }
 
@@ -127,7 +126,7 @@ export class ProductManager {
             || !productReplace.category
             || !productReplace.thumbnails
          ) {
-            return res.status(400).send({ error: "Missing values" })
+            return res.status(400).json({ error: "Missing values" })
          }
 
          const result = await productsModel.updateOne(
@@ -135,13 +134,13 @@ export class ProductManager {
             { $set: productReplace }
          )
 
-         res.status(200).send({ status: "Actualizado", payload: result })
+         res.status(200).json({ status: "Product Update", payload: result })
 
          // meter aca el emit creoooooo
 
       } catch (error) {
-         console.error(error)
-         res.status(500).send({ error: "Internal server error" })
+         console.error(`Cannot update the product ${error}`)
+         res.status(500).json({ error: "Internal server error" })
       }
    }
 
@@ -159,13 +158,13 @@ export class ProductManager {
          if (!product) return res.status(404).json({ error: `Product with id: ${pid} Not Found` })
 
          await productsModel.deleteOne({ _id: pid })
-         res.status(200).send({ result: "Product Delete", payload: product })
+         res.status(200).json({ result: "Product Delete", payload: product })
 
          // meter el emit antes del res 
 
       } catch (error) {
-         console.error(error)
-         res.status(500).send({ error: "Internal server error" })
+         console.error(`Cannot delete the product ${error}`)
+         res.status(500).json({ error: "Internal server error" })
       }
    }
 }
