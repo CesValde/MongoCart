@@ -1,41 +1,58 @@
 import { Router } from 'express'
-
-import { ProductManager } from '../ProductManager.js'
 import { CartManager } from '../CartManager.js'
 
-const productManager = new ProductManager()
-const cartManager = new CartManager(productManager)
-const route = Router()
+export default function cartsRouter(io) {
+   const cartManager = new CartManager(io)
+   const route = Router()
 
-// Lista todos los carritos de la base de datos
-route.get('/', cartManager.getCarts)
+   route.get('/', async (req, res) => {
+      const result = await cartManager.getCarts()
+      if (result.status === "error") return res.status(500).json(result)
+      res.json(result)
+   })
 
-// Debe listar los productos que pertenecen al carrito con el cid proporcionado.
-route.get('/:cid', cartManager.getProductsCartById)
+   route.get('/:cid', async (req, res) => {
+      const result = await cartManager.getProductsCartById(req.params.cid)
+      if (result.status === "error") return res.status(400).json(result)
+      res.json(result)
+   })
 
-// Debe crear un nuevo carrito 
-route.post('/', cartManager.createCart)
+   route.post('/', async (req, res) => {
+      const result = await cartManager.createCart(req.body)
+      if (result.status === "error") return res.status(400).json(result)
+      res.status(201).json(result)
+   })
 
-/* 
-Debe agregar el producto al arreglo products del carrito seleccionado, utilizando el siguiente formato:
-product: Solo debe contener el ID del producto.
-quantity: Debe contener el número de ejemplares de dicho producto (se agregará de uno en uno).
-Si un producto ya existente intenta agregarse, se debe incrementar el campo quantity de dicho producto.
-*/
-route.post('/:cid/product/:pid', cartManager.addProductCart)
+   route.post('/:cid/product/:pid', async (req, res) => {
+      const result = await cartManager.addProductCart(req.params.cid, req.params.pid)
+      if (result.status === "error") return res.status(400).json(result)
+      res.json(result)
+   })
 
-// deberá eliminar del carrito el producto seleccionado.
-route.delete('/:cid/products/:pid', cartManager.deleteProductCart)
+   route.delete('/:cid/products/:pid', async (req, res) => {
+      const result = await cartManager.deleteProductCart(req.params.cid, req.params.pid)
+      if (result.status === "error") return res.status(400).json(result)
+      res.json(result)
+   })
 
-// deberá actualizar todos los productos del carrito con un arreglo de productos.
-// [{ "product": "69278fefde6bcabc9dbf2300", "quantity": 0 }]
-route.put('/:cid', cartManager.updateProductsCart)
+   route.put('/:cid', async (req, res) => {
+      const result = await cartManager.updateProductsCart(req.params.cid, req.body)
+      if (result.status === "error") return res.status(400).json(result)
+      res.json(result)
+   })
 
-// deberá poder actualizar SÓLO la cantidad de ejemplares del producto por cualquier 
-// cantidad pasada desde req.body -> { quantity: 5 }
-route.put('/:cid/products/:pid', cartManager.updateQuantity)
+   route.put('/:cid/products/:pid', async (req, res) => {
+      const { quantity } = req.body
+      const result = await cartManager.updateQuantity(req.params.cid, req.params.pid, quantity)
+      if (result.status === "error") return res.status(400).json(result)
+      res.json(result)
+   })
 
-// deberá eliminar todos los productos del carrito
-route.delete('/:cid', cartManager.deleteAllProductsCart)
+   route.delete('/:cid', async (req, res) => {
+      const result = await cartManager.deleteAllProductsCart(req.params.cid)
+      if (result.status === "error") return res.status(400).json(result)
+      res.json(result)
+   })
 
-export default route
+   return route
+}

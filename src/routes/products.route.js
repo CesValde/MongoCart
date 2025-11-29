@@ -1,35 +1,42 @@
 import { Router } from 'express'
-/* import path from  */'path'
-/* import { fileURLToPath } from 'url' */
 import { ProductManager } from '../ProductManager.js'
 
-/* const __filename = fileURLToPath(import.meta.url) */
-/* const __dirname = path.dirname(__filename) */
+export default function productsRouter(io) {
+   const productManager = new ProductManager(io)
+   const route = Router()
 
-/* const pathProduct = path.join(__dirname, '..', 'json', 'products.json') */
-const productManager = new ProductManager()
+   route.get('/', async (req, res) => {
+      const result = await productManager.getProducts(req.query)
+      if (result.status === "error") return res.status(500).json(result)
+      res.status(200).json(result)
+   })
 
-const route = Router()
-/* import { io } from '../app.js' */
+   route.get('/:pid', async (req, res) => {
+      const { pid } = req.params
+      const result = await productManager.getProductById(pid)
+      if (result.status === "error") return res.status(400).json(result)
+      res.status(200).json(result)
+   })
 
-// lista todos los productos de la base de datos.
-route.get('/', productManager.getProducts)
+   route.post('/', async (req, res) => {
+      const result = await productManager.addProduct(req.body)
+      if (result.status === "error") return res.status(400).json(result)
+      res.status(201).json(result)
+   })
 
-// busca un producto por id
-route.get('/:pid', productManager.getProductById)
+   route.put("/:pid", async (req, res) => {
+      const { pid } = req.params
+      const result = await productManager.updateProduct(pid, req.body)
+      if (result.status === "error") return res.status(400).json(result)
+      res.status(200).json(result)
+   })
 
-// Debe agregar un nuevo producto con los siguientes campos:
-// id: Number/String (No se manda desde el body, se autogenera para asegurar que nunca se repitan los ids).
-// emite la lista de productos actualizada a los usuarios en linea
-route.post('/', productManager.addProduct)
+   route.delete("/:pid", async (req, res) => {
+      const { pid } = req.params
+      const result = await productManager.deleteProduct(pid)
+      if (result.status === "error") return res.status(400).json(result)
+      res.status(200).json(result)
+   })
 
-// Debe actualizar un producto por los campos enviados desde el body.  
-// No se debe actualizar ni eliminar el id al momento de hacer la actualización.
-// emite la lista de productos actualizada a los usuarios en linea
-route.put("/:pid", productManager.updateProduct)
-
-// Debe eliminar el producto con el pid indicado.
-// emite la lista de productos actualizada a los usuarios en linea
-route.delete("/:pid", productManager.deleteProduct)
-
-export default route
+   return route
+}

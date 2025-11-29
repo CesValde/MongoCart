@@ -3,234 +3,213 @@ import { cartsModel } from "./models/carts.model.js"
 import { productsModel } from "./models/products.model.js"
 
 export class CartManager {
-   constructor(productManager) {
-      this.productManager = productManager
+   constructor(io) {
+      this.io = io
    }
 
-   // Obtiene los carts de la base de datos
-   async getCarts(req, res) {
+   // Obtiene todos los carritos
+   async getCarts() {
       try {
          const result = await cartsModel.find()
-         res.status(200).json({ status: "Success", payload: result })
+         console.log("Carritos obtenidos:", result.length)
+         return { status: "success", payload: result }
       } catch (error) {
          console.log(`Cannot get the carts ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // retorna los productos de un carrito en base a su id 
-   async getProductsCartById(req, res) {
+   // Retorna los productos de un carrito por ID
+   async getProductsCartById(cid) {
       try {
-         const { cid } = req.params
-
-         // Validamos ID de Mongo
          if (!mongoose.Types.ObjectId.isValid(cid)) {
-            return res.status(400).json({ error: "Invalid cart ID format" })
+            console.log("Invalid cart ID format:", cid)
+            return { status: "error", error: "Invalid cart ID format" }
          }
 
          const cart = await cartsModel.findById(cid).populate("products.product")
-         if (!cart) return res.status(404).json({ error: `Cart with id: ${cid} Not Found` })
-         res.status(200).json({ result: "Success", payload: cart })
+         if (!cart) {
+            console.log(`Cart with id ${cid} Not Found`)
+            return { status: "error", error: `Cart with id: ${cid} Not Found` }
+         }
+
+         console.log(`Productos del carrito ${cid} obtenidos`)
+         return { status: "success", payload: cart }
       } catch (error) {
          console.log(`Cannot get the cart ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // Crea un nuevo cart
-   async createCart(req, res) {
+   // Crea un nuevo carrito
+   async createCart(cartData) {
       try {
-         const { cartData } = req.body;
-
-         if (!cartData?.products ||    
-            !Array.isArray(cartData.products) ||
-            cartData.products.length === 0 ||
-            !cartData.products.every(p => p.product)  // recorre el array y asegura que cada objeto tenga su campo product lleno.
-         ) {
-            return res.status(400).json({ error: true, message: "You must include products as an array" })
+         // Si no mandan nada → creo un carrito vacío
+         if (!cartData || !Array.isArray(cartData.products)) {
+            cartData = { products: [] }
          }
 
          const result = await cartsModel.create(cartData)
-         res.status(201).json({ result: "Cart Create", payload: result })
+         return { status: "success", payload: result }
       } catch (error) {
          console.log(`Cannot create the cart ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // agrega un producto al carrito seleccionado y retorna el carrito
-   async addProductCart(req, res) {
+   // Agrega un producto a un carrito
+   async addProductCart(cid, pid) {
       try {
-         const { cid, pid } = req.params
-
-         // Validamos ID de Mongo
-         if (!mongoose.Types.ObjectId.isValid(pid) ||
-            !mongoose.Types.ObjectId.isValid(cid)
-         ) {
-            return res.status(400).json({ error: "Invalid product/cart ID format" })
+         if (!mongoose.Types.ObjectId.isValid(cid) || !mongoose.Types.ObjectId.isValid(pid)) {
+            console.log("Invalid product or cart ID format")
+            return { status: "error", error: "Invalid product/cart ID format" }
          }
 
          const cart = await cartsModel.findById(cid)
-         if (!cart) return res.status(404).json({ message: `Cart with id: ${cid} Not Found` })
+         if (!cart) {
+            console.log(`Cart with id ${cid} Not Found`)
+            return { status: "error", error: `Cart with id: ${cid} Not Found` }
+         }
 
          const product = await productsModel.findById(pid)
-         if (!product) return res.status(404).json({ message: `Product with id: ${pid} Not Found` })
+         if (!product) {
+            console.log(`Product with id ${pid} Not Found`)
+            return { status: "error", error: `Product with id: ${pid} Not Found` }
+         }
 
-         // Buscar si el producto ya está en el carrito
-         const index = cart.products.findIndex(
-            (p) => p.product.toString() === pid
-         )
-
+         const index = cart.products.findIndex(p => String(p.product) === pid)
          if (index !== -1) {
-            // Si existe, aumento cantidad
             cart.products[index].quantity++
+            console.log(`Product ${pid} quantity increased in cart ${cid}`)
          } else {
-            // Si no existe, lo agrego
             cart.products.push({ product: pid, quantity: 1 })
+            console.log(`Product ${pid} added to cart ${cid}`)
          }
 
          const updatedCart = await cart.save()
-         return res.status(200).json({ result: "Product add to Cart", payload: updatedCart })
+         this.io.emit('cart_updated', updatedCart) // evento global
+         return { status: "success", payload: updatedCart }
       } catch (error) {
-         console.log(`Cannot add the products ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot add the product ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // elimina del carrito el producto seleccionado.
-   async deleteProductCart(req, res) {
+   // Elimina un producto de un carrito
+   async deleteProductCart(cid, pid) {
       try {
-         const { cid, pid } = req.params
-
-         // Validamos ID de Mongo
-         if (!mongoose.Types.ObjectId.isValid(pid) ||
-            !mongoose.Types.ObjectId.isValid(cid)
-         ) {
-            return res.status(400).json({ error: "Invalid product/cart ID format" })
+         if (!mongoose.Types.ObjectId.isValid(cid) || !mongoose.Types.ObjectId.isValid(pid)) {
+            console.log("Invalid product or cart ID format")
+            return { status: "error", error: "Invalid product/cart ID format" }
          }
 
          const cart = await cartsModel.findById(cid)
-         if (!cart) return res.status(404).json({ message: `Cart with id: ${cid} Not Found` })
-
-         // Busca el producto dentro del carrito
-         const index = cart.products.findIndex(
-            p => String(p.product) === String(pid)
-         )
-
-         if (index === -1) {
-            return res.status(404).json({ message: `Product ${pid} not found in cart` })
+         if (!cart) {
+            console.log(`Cart with id ${cid} Not Found`)
+            return { status: "error", error: `Cart with id: ${cid} Not Found` }
          }
 
-         // Eliminar producto del carrito
+         const index = cart.products.findIndex(p => String(p.product) === pid)
+         if (index === -1) {
+            console.log(`Product ${pid} not found in cart ${cid}`)
+            return { status: "error", error: `Product ${pid} not found in cart` }
+         }
+
          cart.products.splice(index, 1)
          await cart.save()
-         res.status(200).json({ message: "Product removed from cart", payload: cart })
+         console.log(`Product ${pid} removed from cart ${cid}`)
+         return { status: "success", payload: cart }
       } catch (error) {
-         console.error(`Cannot delete the product ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot delete the product ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // actualiza todos los productos del carrito con un arreglo de productos.
-   async updateProductsCart(req, res) {
+   // Actualiza todos los productos de un carrito
+   async updateProductsCart(cid, newProducts) {
       try {
-         const { cid } = req.params
-
-         // Validamos ID de Mongo
-         if (!mongoose.Types.ObjectId.isValid(cid)) return res.status(400).json({ error: "Invalid cart ID format" })
+         if (!mongoose.Types.ObjectId.isValid(cid)) {
+            console.log("Invalid cart ID format:", cid)
+            return { status: "error", error: "Invalid cart ID format" }
+         }
 
          const cart = await cartsModel.findById(cid)
-         if (!cart) return res.status(404).json({ message: `Cart with id: ${cid} Not Found` })
-
-         const newProducts = req.body
+         if (!cart) {
+            console.log(`Cart with id ${cid} Not Found`)
+            return { status: "error", error: `Cart with id: ${cid} Not Found` }
+         }
 
          if (!Array.isArray(newProducts)) {
-            return res.status(400).json({ error: "Body must be an array of products" })
+            console.log("New products must be an array")
+            return { status: "error", error: "Body must be an array of products" }
          }
 
-         // Validación simple de estructura
-         for (const item of newProducts) {
-            if (!item.product || !item.quantity) {
-               return res.status(400).json({ error: "Each item must contain product and quantity" })
-            }
-
-            if (typeof item.quantity !== "number" || item.quantity <= 0) {
-               return res.status(400).json({ error: "The quantity must be greater than 0" })
-            }
-         }
-
-         // Reemplazar productos del carrito
          cart.products = newProducts
          await cart.save()
-         res.status(200).json({ status: "Products updated successfully", payload: cart })
+         console.log(`Cart ${cid} products updated`)
+         return { status: "success", payload: cart }
       } catch (error) {
-         console.error(`Cannot update the products in the cart ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot update products in cart ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // deberá poder actualizar SÓLO la cantidad de ejemplares del producto por cualquier 
-   // cantidad pasada desde req.body
-   async updateQuantity(req, res) {
+   // Actualiza la cantidad de un producto específico
+   async updateQuantity(cid, pid, quantity) {
       try {
-         const { cid, pid } = req.params
-
-         // Validamos ID de Mongo
-         if (!mongoose.Types.ObjectId.isValid(pid) ||
-            !mongoose.Types.ObjectId.isValid(cid)
-         ) {
-            return res.status(400).json({ error: "Invalid product/cart ID format" })
+         if (!mongoose.Types.ObjectId.isValid(cid) || !mongoose.Types.ObjectId.isValid(pid)) {
+            console.log("Invalid product or cart ID format")
+            return { status: "error", error: "Invalid product/cart ID format" }
          }
 
-         const cart = await cartsModel.findById(cid)
-         if (!cart) return res.status(404).json({ message: `Cart with id: ${cid} Not Found` })
-
-         // Validar body
-         const { quantity } = req.body
          if (typeof quantity !== "number" || quantity < 1) {
-            return res.status(400).json({ error: "Quantity must be a positive number" })
+            console.log("Invalid quantity:", quantity)
+            return { status: "error", error: "Quantity must be a positive number" }
          }
 
-         // Busca el producto dentro del carrito
-         const index = cart.products.findIndex(
-            p => String(p.product) === String(pid)
-         )
+         const cart = await cartsModel.findById(cid)
+         if (!cart) {
+            console.log(`Cart with id ${cid} Not Found`)
+            return { status: "error", error: `Cart with id: ${cid} Not Found` }
+         }
 
+         const index = cart.products.findIndex(p => String(p.product) === pid)
          if (index === -1) {
-            return res.status(404).json({ message: `Product ${pid} not found in cart` })
+            console.log(`Product ${pid} not found in cart ${cid}`)
+            return { status: "error", error: `Product ${pid} not found in cart` }
          }
 
-         // Actualizar cantidad
          cart.products[index].quantity = quantity
-
-         // Guardar carrito actualizado
          await cart.save()
-         res.status(200).json({ message: "Product quantity updated", payload: cart })
+         console.log(`Product ${pid} quantity updated to ${quantity} in cart ${cid}`)
+         return { status: "success", payload: cart }
       } catch (error) {
-         console.log(`Cannot update the product quantity ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot update product quantity ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // elimina todos los productos del carrito
-   async deleteAllProductsCart(req, res) {
+   // Elimina todos los productos de un carrito
+   async deleteAllProductsCart(cid) {
       try {
-         const { cid } = req.params
-
-         // Validamos ID de Mongo
          if (!mongoose.Types.ObjectId.isValid(cid)) {
-            return res.status(400).json({ error: "Invalid cart ID format" })
+            console.log("Invalid cart ID format:", cid)
+            return { status: "error", error: "Invalid cart ID format" }
          }
-         const cart = await cartsModel.findById(cid)
-         if (!cart) return res.status(404).json({ message: `Cart with id: ${cid} Not Found` })
 
-         // Vaciar productos
+         const cart = await cartsModel.findById(cid)
+         if (!cart) {
+            console.log(`Cart with id ${cid} Not Found`)
+            return { status: "error", error: `Cart with id: ${cid} Not Found` }
+         }
+
          cart.products = []
          await cart.save()
-         res.status(200).json({ message: "All products removed from cart", payload: cart })
+         console.log(`All products removed from cart ${cid}`)
+         return { status: "success", payload: cart }
       } catch (error) {
-         console.error(`Cannot delete the products ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot delete all products ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 }

@@ -2,10 +2,13 @@ import mongoose from "mongoose"
 import { productsModel } from './models/products.model.js'
 
 export class ProductManager {
+   constructor(io) {
+      this.io = io
+   }
+
    // Obtiene los productos de la base de datos
-   async getProducts(req, res) {
+   async getProducts(queryParams = {}) {
       try {
-         // ?page=2&limit=5&category=tecnologia&sort=asc
          const {
             limit = 10,
             page = 1,
@@ -13,15 +16,13 @@ export class ProductManager {
             status,
             query,
             sort
-         } = req.query
+         } = queryParams
 
-         // usamos {}, porque Mongo espera un objeto
          const filter = {}
-         if (category) filter.category = { $regex: `^${category}$`, $options: "i" };
+
+         if (category) filter.category = { $regex: `^${category}$`, $options: "i" }
          if (status !== undefined) filter.status = status === 'true'
 
-         // $or: cualquiera de los campos puede coincidir
-         // $regex y $options: "i" permiten buscar coincidencias parciales sin importar mayúsculas/minúsculas
          if (query) {
             filter.$or = [
                { title: { $regex: query, $options: "i" } },
@@ -40,93 +41,81 @@ export class ProductManager {
 
          const result = await productsModel.paginate(filter, options)
 
-         res.status(200).json({
-            status: "Success",
+         return {
+            status: "success",
             payload: result.docs,
             totalPages: result.totalPages,
             prevPage: result.prevPage,
             nextPage: result.nextPage,
             page: result.page,
             hasPrevPage: result.hasPrevPage,
-            hasNextPage: result.hasNextPage,
-            prevLink: result.hasPrevPage ? `/products?page=${result.prevPage}` : null,
-            nextLink: result.hasNextPage ? `/products?page=${result.nextPage}` : null
-         })
+            hasNextPage: result.hasNextPage
+         }
+
       } catch (error) {
-         console.log(`Cannot get the products ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot get products: ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
    // retorna un producto en base a su id
-   async getProductById(req, res) {
+   async getProductById(pid) {
       try {
-         const { pid } = req.params
-
-         // Validamos ID de Mongo
          if (!mongoose.Types.ObjectId.isValid(pid)) {
-            return res.status(400).json({ error: "Invalid product ID format" })
+            return { status: "error", error: "Invalid product ID format" }
          }
 
          const product = await productsModel.findById(pid)
-         if (!product) return res.status(404).json({ error: `Product with id: ${pid} Not Found` })
-         res.status(200).json({ result: "Success", payload: product })
+         if (!product) {
+            return { status: "error", error: `Product with id ${pid} not found` }
+         }
+
+         return { status: "success", payload: product }
+
       } catch (error) {
-         console.log(`Cannot get the product ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot get product: ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
-   // agrega un objeto producto nuevo a la coleccion
-   async addProduct(req, res) {
+   // agrega un objeto producto nuevo a la colección
+   async addProduct(data) {
       try {
-         let data = req.body
+         const arr = Array.isArray(data) ? data : [data]
 
-         // Si viene un solo objeto, lo convertimos en array para procesarlo igual
-         if (!Array.isArray(data)) {
-            data = [data]
-         }
-
-         // Validación simple
-         for (const product of data) {
+         for (const product of arr) {
             const { title, description, code, price, status, stock, category, thumbnails } = product
             if (!title || !description || !code || !price || !status || !stock || !category || !thumbnails) {
-               return res.status(400).json({ error: "Missing values" })
+               return { status: "error", error: "Missing values" }
             }
          }
 
-         const result = await productsModel.insertMany(data)
-         res.status(201).json({
-            result: "Product add",
+         const result = await productsModel.insertMany(arr)
+
+         const products = await this.getProducts()
+         this.io.emit('lista_productos', products.payload)
+
+         return {
+            status: "success",
             inserted: result.length,
             payload: result
-         })
-
-         // meter aca el emit creoooooo
+         }
 
       } catch (error) {
-         console.log(`Cannot add the product ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot add product: ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
    // modifica un producto 
-   async updateProduct(req, res) {
+   async updateProduct(pid, productReplace) {
       try {
-         const { pid } = req.params
-         const productReplace = { ...req.body }
          delete productReplace._id
 
-         if (!productReplace.title
-            || !productReplace.description
-            || !productReplace.code
-            || !productReplace.price
-            || !productReplace.status
-            || !productReplace.stock
-            || !productReplace.category
-            || !productReplace.thumbnails
-         ) {
-            return res.status(400).json({ error: "Missing values" })
+         const { title, description, code, price, status, stock, category, thumbnails } = productReplace
+
+         if (!title || !description || !code || !price || !status || !stock || !category || !thumbnails) {
+            return { status: "error", error: "Missing values" }
          }
 
          const result = await productsModel.updateOne(
@@ -134,37 +123,33 @@ export class ProductManager {
             { $set: productReplace }
          )
 
-         res.status(200).json({ status: "Product Update", payload: result })
-
-         // meter aca el emit creoooooo
+         return { status: "success", payload: result }
 
       } catch (error) {
-         console.error(`Cannot update the product ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot update product: ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 
    // elimina un producto
-   async deleteProduct(req, res) {
+   async deleteProduct(pid) {
       try {
-         const { pid } = req.params
-
-         // Validamos ID de Mongo
          if (!mongoose.Types.ObjectId.isValid(pid)) {
-            return res.status(400).json({ error: "Invalid product ID format" })
+            return { status: "error", error: "Invalid product ID format" }
          }
 
          const product = await productsModel.findById(pid)
-         if (!product) return res.status(404).json({ error: `Product with id: ${pid} Not Found` })
+         if (!product) {
+            return { status: "error", error: `Product with id ${pid} Not Found` }
+         }
 
          await productsModel.deleteOne({ _id: pid })
-         res.status(200).json({ result: "Product Delete", payload: product })
 
-         // meter el emit antes del res 
+         return { status: "success", payload: product }
 
       } catch (error) {
-         console.error(`Cannot delete the product ${error}`)
-         res.status(500).json({ error: "Internal server error" })
+         console.log(`Cannot delete product: ${error}`)
+         return { status: "error", error: "Internal server error" }
       }
    }
 }

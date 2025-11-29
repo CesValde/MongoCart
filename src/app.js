@@ -59,7 +59,7 @@
 
    9. Se debe entregar
    - Modificar la vista index.handlebars en el router de views ‘/products’, creada en la pre-entrega anterior, para visualizar 
-   todos los productos con su respectiva paginación. Además, cada producto mostrado puede resolverse de dos formas:
+   todos los productos con su respectiva paginación. Además, cada producto mostrado puede resolverse de dos formas: ✅
 
    - Llevar a una nueva vista con el producto seleccionado con su descripción completa, detalles de precio, categoría, e
    tc. Además de un botón para agregar al carrito.
@@ -78,8 +78,8 @@ import express from "express"
 import mongoose from 'mongoose'
 
 // routes
-import productsRoute from "./routes/products.route.js"
-import cartsRoute from "./routes/carts.route.js"
+import productsRouter from "./routes/products.route.js"
+import cartsRouter from "./routes/carts.route.js"
 import realTimeProducts from "./routes/views.route.js"
 
 // express-handlebars
@@ -140,16 +140,20 @@ app.get("/", (req, res) => {
 })
 
 // rutas /api/products
-app.use("/api/products", productsRoute)
+app.use("/api/products", productsRouter(io))
 
 // rutas /api/carts
-app.use("/api/carts", cartsRoute)
+app.use("/api/carts", cartsRouter(io))
 
 // renderiza los productos en tiempo real
-app.use("/products", realTimeProducts)
+app.use("/products", realTimeProducts(io))
 
 io.on("connection", (socket) => {
-   // emitir la coleccion de productos a todos los sockets
-   const products = productManager.getProducts()
-   socket.emit("lista_productos", products)
+   console.log("Cliente conectado!")
+
+   // Emite todos los productos por default
+   productManager.getProducts({ page: 1, limit: 10 })
+      .then(result => {
+         socket.emit('lista_productos', result.payload)
+      })
 })

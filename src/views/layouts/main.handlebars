@@ -1,11 +1,23 @@
-<!DOCTYPE html>
 <html lang="es">
-<head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>{{title}}</title>
-</head>
-<body>
-   {{{body}}}
-</body>
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>{{title}}</title>
+      <link rel="stylesheet" type="text/css" href="/css/styles.css" />
+   </head>
+   <body>
+      <header>
+         <h1>Mi tienda</h1>
+      </header>
+
+      <h1> Productos Disponibles </h1>
+      <!-- Aquí se renderiza el contenido de la vista específica -->
+      {{{body}}}
+
+      {{!-- <div class="shop-cart" data-cart-id=""></div> --}}
+
+      <!-- Socket.IO -->
+      <script src="/socket.io/socket.io.js"></script>
+      <script src="/js/logic.js"></script>
+   </body>
 </html>
