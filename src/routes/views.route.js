@@ -15,9 +15,23 @@ export default function viewsRouter(io) {
 
    // Vista de carrito
    router.get("/cart/:cid", async (req, res) => {
-      const result = await cartManager.getProductsCartById(req.params.cid)
-      if (result.status === "error") return res.status(404).send(result.error)
-      res.render("cart", { cart: result.payload })
+      const { cid } = req.params
+
+      // Llamás al método de tu clase
+      const result = await cartManager.getProductsCartById(cid)
+
+      if (result.status !== "success") {
+         return res.status(404).render("cart", {
+            title: "Carrito no encontrado",
+            error: result.error
+         })
+      }
+
+      // Renderizás la vista pasándole los productos
+      res.render("cart", {
+         title: "Mi Carrito",
+         cart: result.payload
+      })
    })
 
    // Detalle de producto

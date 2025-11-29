@@ -3,9 +3,6 @@ const socket = io()
 // Seleccionar un único contenedor
 const listaProductos = document.querySelector('.product-list')
 
-// Obtener el cartId desde el atributo data
-const shopCart = document.querySelector('.shop-cart')
-
 // Escuchar lista de productos desde el servidor
 socket.on('lista_productos', (products) => {
    listaProductos.innerHTML = ''  // limpiar lista
@@ -35,41 +32,39 @@ socket.on('lista_productos', (products) => {
    })
 })
 
-// Función para agregar un producto al carrito
+let cartId = null
 async function addToCart(pid) {
-   // Crear carrito si no existe
-   if (!shopCart.dataset.cartId) {
-      console.log("No tengo carrito, creando uno...")
-
+   // si no tengo carrito → lo creo
+   if (!cartId) {
       const res = await fetch("/api/carts/", {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({ products: [] })
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
       if (data.status !== "success") {
          console.error("Error al crear carrito:", data)
          return
       }
 
-      // id del carrito se lo asigno al div
-      const cartId = data.payload._id
-      shopCart.dataset.cartId = cartId
+      cartId = data.payload._id
       console.log("Carrito creado con ID:", cartId)
    }
 
    // agregar producto al carrito existente
-   const cartId = shopCart.dataset.cartId
-
    const res = await fetch(`/api/carts/${cartId}/product/${pid}`, {
       method: "POST"
    })
 
    const data = await res.json()
-
    if (data.status === "success") {
-      alert("Producto agregado al carrito!")
+      Swal.fire({
+         title: 'Success!',
+         text: 'The product has been add to cart',
+         icon: 'success',
+         confirmButtonText: 'Cool'
+      })
    } else {
       alert(`Error: ${data.error}`)
    }

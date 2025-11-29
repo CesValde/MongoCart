@@ -66,9 +66,10 @@
    + Sugerencia de la ruta: “/products/:pid”.
 
    - Contar con el botón de “agregar al carrito” directamente, sin necesidad de abrir una página 
-      adicional con los detalles del producto.
+      adicional con los detalles del producto. ✅
+
    - Además, agregar una vista en ‘/carts/:cid (cartId) para visualizar un carrito específico, 
-      donde se deberán listar SOLO los productos que pertenezcan a dicho carrito.
+      donde se deberán listar SOLO los productos que pertenezcan a dicho carrito. ✅
 */
 
 // express
@@ -104,7 +105,18 @@ const PORT = 8080
 const URL = "mongodb+srv://valderramaCesar_db:Valde$.88@cluster0.o1b7cwr.mongodb.net/MongoCart?appName=Cluster0"
 
 // Configuración de Handlebars
-app.engine("handlebars", handlebars.engine()) // define cómo procesar los .handlebars
+app.engine(
+  "handlebars",
+  handlebars.engine({
+    defaultLayout: "main",
+    helpers: {
+      multiply: (a, b) => a * b,
+      cartTotal: (products) =>
+        products.reduce((sum, p) => sum + p.product.price * p.quantity, 0)
+    }
+  })
+);
+
 app.set("view engine", "handlebars") // define qué motor usar, en este caso handlebars
 app.set("views", path.join(__dirname, "views")) // define dónde están las vistas
 

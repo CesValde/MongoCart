@@ -1,3 +1,5 @@
+/* index.handlebars */
+
 body {
    background-color: rgb(164, 164, 164);
 }
@@ -49,7 +51,7 @@ button {
    border-style: none;
    background-color: rgb(29, 29, 129);
    cursor: pointer;
-   transition: all .3s;
+   transition: all 0.3s;
 
    &:hover {
       color: white;
@@ -63,4 +65,12 @@ img {
    height: auto; /* Todas tendrán esta altura */
    object-fit: contain; /* Se recorta pero no se deforma */
    border-radius: 10px;
+}
+
+/* cart.handlebars */
+.cart {
+   display: grid;
+   grid-template-columns: repeat(3, 1fr); /* 3 columnas iguales */
+   gap: 50px;
+   color: white;
 }

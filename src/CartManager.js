@@ -27,7 +27,7 @@ export class CartManager {
             return { status: "error", error: "Invalid cart ID format" }
          }
 
-         const cart = await cartsModel.findById(cid).populate("products.product")
+         const cart = await cartsModel.findById(cid).populate("products.product").lean()
          if (!cart) {
             console.log(`Cart with id ${cid} Not Found`)
             return { status: "error", error: `Cart with id: ${cid} Not Found` }
@@ -87,7 +87,6 @@ export class CartManager {
          }
 
          const updatedCart = await cart.save()
-         this.io.emit('cart_updated', updatedCart) // evento global
          return { status: "success", payload: updatedCart }
       } catch (error) {
          console.log(`Cannot add the product ${error}`)
