@@ -1,11 +1,10 @@
-/* index.handlebars */
-
 body {
-   background-color: rgb(164, 164, 164);
+   background-color: rgb(183, 183, 183);
+   font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 h1 {
-   color: white;
+   color: #0b0d33;
    text-align: center;
 }
 
@@ -29,11 +28,20 @@ main {
    flex-direction: column;
    justify-content: space-between;
    align-items: center;
-   background-color: rgb(104, 159, 159);
+   background-color: #0b0d33;
+   box-shadow: 0 0 8px rgb(3, 31, 67);
    padding: 20px;
    border-radius: 12px;
    min-height: 380px; /* Todas igual de altas */
    width: 400px; /* Todas igual de anchas */
+   transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+
+   &:hover {
+      transform: scale(1.03); /* Zoom */
+      box-shadow: 0 0 20px rgb(2, 9, 230);
+   }
 }
 
 section {
@@ -67,7 +75,6 @@ img {
    border-radius: 10px;
 }
 
-/* cart.handlebars */
 .cart {
    display: grid;
    grid-template-columns: repeat(3, 1fr); /* 3 columnas iguales */

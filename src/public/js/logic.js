@@ -1,4 +1,12 @@
-const socket = io()
+// Obtener params de la URL
+const urlParams = new URLSearchParams(window.location.search)
+
+const socket = io({
+   query: {
+      limit: urlParams.get("limit") || 10,
+      page: urlParams.get("page") || 1
+   }
+})
 
 // Seleccionar un único contenedor
 const listaProductos = document.querySelector('.product-list')
@@ -49,7 +57,6 @@ async function addToCart(pid) {
       }
 
       cartId = data.payload._id
-      console.log("Carrito creado con ID:", cartId)
    }
 
    // agregar producto al carrito existente
@@ -63,7 +70,7 @@ async function addToCart(pid) {
          title: 'Success!',
          text: 'The product has been add to cart',
          icon: 'success',
-         confirmButtonText: 'Cool'
+         confirmButtonText: 'Confirm'
       })
    } else {
       alert(`Error: ${data.error}`)
