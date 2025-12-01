@@ -7,19 +7,14 @@
    </head>
    <body>
       <header>
-         <h1>Mi tienda</h1>
+         <h1> MongoCart </h1>
       </header>
-
-      <div id="cart-info" data-cart-id="{{cart._id}}" style="display:none;"></div>
 
       <!-- Aquí se renderiza el contenido de la vista específica -->
       {{{body}}}
 
-      <!-- Socket.IO -->
       <script src="/socket.io/socket.io.js"></script>
       <script src="/js/logic.js"></script>
-
-      <!-- SweetAlert2 desde CDN -->
       <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
    </body>
 </html>

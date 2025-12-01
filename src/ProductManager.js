@@ -2,10 +2,6 @@ import mongoose from "mongoose"
 import { productsModel } from './models/products.model.js'
 
 export class ProductManager {
-   constructor(io) {
-      this.io = io
-   }
-
    // Obtiene los productos de la base de datos
    async getProducts(queryParams = {}) {
       try {
@@ -20,6 +16,7 @@ export class ProductManager {
 
          const filter = {}
 
+         // filtra sea mayus o minus
          if (category) filter.category = { $regex: `^${category}$`, $options: "i" }
          if (status !== undefined) filter.status = status === 'true'
 
@@ -31,9 +28,12 @@ export class ProductManager {
             ]
          }
 
+         // evalua las opciones y filtra por precio si esta en la url
          const options = {
-            page,
-            limit,
+            page: Number(page),
+            limit: Number(limit),
+            /* page,
+            limit, */
             lean: true,
             sort: sort === "asc" ? { price: 1 } :
                sort === "desc" ? { price: -1 } : {}
@@ -51,9 +51,7 @@ export class ProductManager {
             hasPrevPage: result.hasPrevPage,
             hasNextPage: result.hasNextPage
          }
-
       } catch (error) {
-         console.log(`Cannot get products: ${error}`)
          return { status: "error", error: "Internal server error" }
       }
    }
@@ -71,9 +69,7 @@ export class ProductManager {
          }
 
          return { status: "success", payload: product }
-
       } catch (error) {
-         console.log(`Cannot get product: ${error}`)
          return { status: "error", error: "Internal server error" }
       }
    }
@@ -91,7 +87,6 @@ export class ProductManager {
          }
 
          const result = await productsModel.insertMany(arr)
-
          const products = await this.getProducts()
          this.io.emit('lista_productos', products.payload)
 
@@ -102,7 +97,6 @@ export class ProductManager {
          }
 
       } catch (error) {
-         console.log(`Cannot add product: ${error}`)
          return { status: "error", error: "Internal server error" }
       }
    }
@@ -126,7 +120,6 @@ export class ProductManager {
          return { status: "success", payload: result }
 
       } catch (error) {
-         console.log(`Cannot update product: ${error}`)
          return { status: "error", error: "Internal server error" }
       }
    }
@@ -148,7 +141,6 @@ export class ProductManager {
          return { status: "success", payload: product }
 
       } catch (error) {
-         console.log(`Cannot delete product: ${error}`)
          return { status: "error", error: "Internal server error" }
       }
    }
