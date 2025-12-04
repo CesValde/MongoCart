@@ -25,7 +25,7 @@ const app = express()
 const server = http.createServer(app)
 export const io = new Server(server)
 const PORT = 8080
-const URL = "mongodb+srv://valderramaCesar_db:Valde$.88@cluster0.o1b7cwr.mongodb.net/MongoCart?appName=Cluster0"
+const URL = "mongodb+srv://valderramaCesar_db:CeSarValDe88DaVid2002@cluster0.o1b7cwr.mongodb.net/MongoCart?appName=Cluster0"
 
 // Configuración de Handlebars
 app.engine(
