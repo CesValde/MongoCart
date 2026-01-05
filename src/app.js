@@ -1,9 +1,9 @@
 import express from "express"
-import mongoose from 'mongoose'
+import mongoose from "mongoose"
 
 // routes
-import productsRouter from "./routes/products.route.js"
 import cartsRouter from "./routes/carts.route.js"
+import productsRouter from "./routes/products.route.js"
 import viewsRouter from "./routes/views.route.js"
 
 // express-handlebars
@@ -12,8 +12,8 @@ import path from "path"
 import { fileURLToPath } from "url"
 
 // socket io
-import { Server } from "socket.io"
 import http from "http"
+import { Server } from "socket.io"
 
 // filename toma el directorio del archivo ej: C:\Entrega2\src\app.js
 // dirname toma la carpeta del directorio del archivo ej: C:\proyectos\miapp\src
@@ -25,7 +25,8 @@ const app = express()
 const server = http.createServer(app)
 export const io = new Server(server)
 const PORT = 8080
-const URL = "mongodb+srv://valderramaCesar_db:CeSarValDe88DaVid2002@cluster0.o1b7cwr.mongodb.net/MongoCart?appName=Cluster0"
+const URL =
+   "mongodb+srv://valderramaCesar_db:CeSarValDe88DaVid2002@cluster0.o1b7cwr.mongodb.net/MongoCart?appName=Cluster0"
 
 // Configuración de Handlebars
 app.engine(
@@ -35,8 +36,11 @@ app.engine(
       helpers: {
          multiply: (a, b) => a * b,
          cartTotal: (products) =>
-            products.reduce((sum, p) => sum + p.product.price * p.quantity, 0)
-      }
+            products.reduce((sum, p) => sum + p.product.price * p.quantity, 0),
+
+         // 👉 Helper para convertir variables a JSON usable en el frontend
+         json: (context) => JSON.stringify(context),
+      },
    })
 )
 
@@ -56,9 +60,9 @@ const productManager = new ProductManager()
 async function connectMongoose() {
    try {
       await mongoose.connect(URL)
-      console.log("Conectado a MongoDB");
+      console.log("Conectado a MongoDB")
    } catch (error) {
-      console.error(`Error conectando a MongoDB: ${error}`);
+      console.error(`Error conectando a MongoDB: ${error}`)
    }
 }
 connectMongoose()

@@ -4,20 +4,20 @@ const urlParams = new URLSearchParams(window.location.search)
 const socket = io({
    query: {
       limit: urlParams.get("limit") || 10,
-      page: urlParams.get("page") || 1
-   }
+      page: urlParams.get("page") || 1,
+   },
 })
 
 // Seleccionar un único contenedor
-const listaProductos = document.querySelector('.product-list')
+const listaProductos = document.querySelector(".product-list")
 
 // Escuchar lista de productos desde el servidor
-socket.on('lista_productos', (products) => {
-   listaProductos.innerHTML = ''  // limpiar lista
+socket.on("lista_productos", (products) => {
+   listaProductos.innerHTML = "" // limpiar lista
 
-   products.forEach(product => {
-      const card = document.createElement('div')
-      card.classList.add('product-card')
+   products.forEach((product) => {
+      const card = document.createElement("div")
+      card.classList.add("product-card")
 
       card.innerHTML = `   
          <img src="/${product.thumbnails}">
@@ -33,8 +33,8 @@ socket.on('lista_productos', (products) => {
    })
 
    // Agregar listener a los botones
-   listaProductos.querySelectorAll('button').forEach(button => {
-      button.addEventListener('click', () => {
+   listaProductos.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
          addToCart(button.dataset.pid)
       })
    })
@@ -47,7 +47,7 @@ async function addToCart(pid) {
       const res = await fetch("/api/carts/", {
          method: "POST",
          headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ products: [] })
+         body: JSON.stringify({ products: [] }),
       })
 
       const data = await res.json()
@@ -61,16 +61,16 @@ async function addToCart(pid) {
 
    // agregar producto al carrito existente
    const res = await fetch(`/api/carts/${cartId}/product/${pid}`, {
-      method: "POST"
+      method: "POST",
    })
 
    const data = await res.json()
    if (data.status === "success") {
       Swal.fire({
-         title: 'Success!',
-         text: 'The product has been add to cart',
-         icon: 'success',
-         confirmButtonText: 'Confirm'
+         title: "Success!",
+         text: "The product has been add to cart",
+         icon: "success",
+         confirmButtonText: "Confirm",
       })
    } else {
       alert(`Error: ${data.error}`)
